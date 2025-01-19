@@ -85,43 +85,39 @@ class Scanner {
             case '*':
                 addToken(STAR);
                 break;
+            case '^':
+                addToken(BITWISE_XOR);
+                break;
+            case '?':
+                addToken(QUESTION_MARK);
+                break;
+            case ':':
+                addToken(COLON);
+                break;
+            case '%':
+                addToken(MODULO);
+                break;
             case '!':
                 addToken(match('=') ? BANG_EQUAL : BANG);
                 break;
             case '=':
                 addToken(match('=') ? EQUAL_EQUAL : EQUAL);
                 break;
+            case '&':
+                addToken(match('&') ? AND : BITWISE_AND);
+                break;
+            case '|':
+                addToken(match('|') ? OR : BITWISE_OR);
+                break;
             case '<':
-                addToken(match('=') ? LESS_EQUAL : LESS);
+                addToken(match('=') ? LESS_EQUAL : match('<') ? LEFT_SHIFT : LESS);
                 break;
             case '>':
-                addToken(match('=') ? GREATER_EQUAL : GREATER);
+                addToken(match('=') ? GREATER_EQUAL : match('>') ? RIGHT_SHIFT : GREATER);
                 break;
             case '/':
                 if (match('/')) {
                     while (peek() != '\n' && !isAtEnd()) advance();
-                } else if (match('*')) {
-                    int commentDepth = 1;
-                
-                    while (!isAtEnd() && commentDepth > 0) {
-                        char current = advance();
-                
-                        if (current == '\n') {
-                            line++;
-                        } else if (current == '/' && peek() == '*') {
-                            // Found the start of a nested comment
-                            advance();
-                            commentDepth++;
-                        } else if (current == '*' && peek() == '/') {
-                            // Found the end of a comment
-                            advance();
-                            commentDepth--;
-                        }
-                    }
-                
-                    if (commentDepth > 0) {
-                        Lox.error(line, "Unterminated comment.");
-                    }
                 } else if (match('*')) {
                     int commentDepth = 1;
                 
