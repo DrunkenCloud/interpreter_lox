@@ -1,1 +1,14 @@
+# Ignore .class files
 *.class
+
+# Ignore compiled JAR files
+*.jar
+
+# Ignore log files
+*.log
+
+# Ignore IDE and build system files
+/.idea/
+/target/
+/out/
+/*.iml
