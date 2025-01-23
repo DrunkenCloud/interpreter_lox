@@ -1,5 +1,6 @@
 package lox;
 
+import java.util.ArrayList;
 import java.util.List;
 import static lox.TokenType.*;
 
@@ -12,12 +13,62 @@ public class Parser {
         this.tokens = tokens;
     }
 
-    Expr parse() {
+    List<Stmt> parse() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!isAtEnd()) {
+            statements.add(declaration());
+        }
+        return statements;
+    }
+
+    private Stmt declaration() {
         try {
-            return expression();
-        } catch (ParseError e) {
+            if (match(VAR)) return varDeclaration();
+            return statement();
+        } catch (ParseError error) {
+            synchronize();
             return null;
         }
+    }
+
+    private Stmt statement() {
+        if (match(PRINT)) return printStatement();
+        if (match(LEFT_BRACE)) return new Stmt.Block(block());
+
+        return expressionStatement();
+    }
+
+    private Stmt expressionStatement() {
+        Expr value = expression();
+        consume(SEMICOLON, "Expected ';' after value.");
+        return new Stmt.Expression(value);
+    }
+
+    private Stmt printStatement() {
+        Expr value = expression();
+        consume(SEMICOLON, "Expected ';' after value.");
+        return new Stmt.Print(value);
+    }
+
+    private Stmt varDeclaration() {
+        Token name = consume(IDENTIFIER, "Expected Variable name!");
+        Expr initializer = null;
+        if (match(EQUAL)) {
+            initializer = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after variable declaration!");
+        return new Stmt.Var(name, initializer);
+    }
+
+    private List<Stmt> block() {
+        List <Stmt> statements = new ArrayList<>();
+
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+        }
+
+        consume(RIGHT_BRACE, "Expect '}' after block.");
+        return statements;
     }
 
     private boolean match(TokenType... types) {
@@ -53,9 +104,23 @@ public class Parser {
     }
 
     private Expr expression() {
-        return comma();
+        return assignment();
     }
-
+    
+    private Expr assignment() {
+        Expr expr = comma();
+        if (match(EQUAL)) {
+            Token equals = previous();
+            Expr value = assignment();
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable) expr).name;
+                return new Expr.Assign(name, value);
+            }
+            error(equals, "Invalid assignment target.");
+        }
+        return expr;
+    }
+    
     private Expr comma() {
         Expr expr = ternary();
         while (match(COMMA)) {
@@ -68,29 +133,26 @@ public class Parser {
         }
         return expr;
     }
-
+    
     private Expr ternary() {
         Expr expr = equality();
-    
         if (match(QUESTION_MARK)) {
+            Token operator = previous();
             Expr left = ternary();
             consume(COLON, "Expect ':' after true branch.");
             Expr right = ternary();
-            return new Expr.Ternary(expr, left, right);
+            return new Expr.Ternary(expr, left, right, operator);
         }
-    
         return expr;
     }
-
+    
     private Expr equality() {
         Expr expr = comparison();
-
         while (match(BANG_EQUAL, EQUAL_EQUAL)) {
             Token operator = previous();
             Expr right = comparison();
             expr = new Expr.Binary(expr, operator, right);
         }
-
         return expr;
     }
 
@@ -123,20 +185,37 @@ public class Parser {
         }
         return expr;
     }
-
+    
     private Expr factor() {
-        Expr expr = unary();
+        Expr expr = binary();
         while (match(SLASH, STAR)) {
             Token operator = previous();
-            if (expr == null) {
-                Lox.error(peek(), "Missing left-hand operand.");
-            }
-            Expr right = unary();
+            Expr right = binary();
             expr = new Expr.Binary(expr, operator, right);
         }
         return expr;
     }
 
+    private Expr binary() {
+        Expr expr = shift();
+        while (match(BITWISE_OR, BITWISE_AND, BITWISE_XOR)) {
+            Token operator = previous();
+            Expr right = shift();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+        return expr;
+    }
+    
+    private Expr shift() {
+        Expr expr = unary();
+        while (match(LEFT_SHIFT, RIGHT_SHIFT)) {
+            Token operator = previous();
+            Expr right = unary();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+        return expr;
+    }
+    
     private Expr unary() {
         if (match(BANG, MINUS)) {
             Token operator = previous();
@@ -145,6 +224,7 @@ public class Parser {
         }
         return primary();
     }
+    
 
     private Expr primary() {
         if (match(FALSE)) return new Expr.Literal(false);
@@ -158,13 +238,16 @@ public class Parser {
             consume(RIGHT_PAREN, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
+        if (match(IDENTIFIER)) {
+            return new Expr.Variable(previous());
+        }      
         return null;
     }
     
     private Token consume(TokenType type, String message) {
         if (check(type)) return advance();
         throw error(peek(), message);
-    }
+    }    
 
     private ParseError error(Token token, String message) {
         Lox.error(token, message);

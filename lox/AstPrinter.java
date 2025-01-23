@@ -1,6 +1,8 @@
 package lox;
 
+import lox.Expr.Assign;
 import lox.Expr.Ternary;
+import lox.Expr.Variable;
 
 public class AstPrinter implements Expr.Visitor<String> {
     String print(Expr expr) {
@@ -39,7 +41,8 @@ public class AstPrinter implements Expr.Visitor<String> {
 
         for (Expr expr : exprs) {
             builder.append(" ");
-            builder.append(expr.accept(this));
+            if (expr == null) builder.append("invalid token");
+            else builder.append(expr.accept(this));
         }
 
         builder.append(")");
@@ -58,4 +61,15 @@ public class AstPrinter implements Expr.Visitor<String> {
     
         System.out.println(new AstPrinter().print(expression));
       }
+
+    @Override
+    public String visitVariableExpr(Variable expr) {
+        throw new UnsupportedOperationException("Unimplemented method 'visitVariableExpr'");
+    }
+
+    @Override
+    public String visitAssignExpr(Assign expr) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitAssignExpr'");
+    }
 }
