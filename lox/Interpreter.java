@@ -16,15 +16,15 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
     }
 
-    private void execute(Stmt stmt) {
-        stmt.accept(this);
-    }
-
-    private Object evaluate(Expr expr) {
+    Object replEval(Expr expr) {
         return expr.accept(this);
     }
 
-    private String stringify(Object object) {
+    void replExecute(Stmt stmt) {
+        stmt.accept(this);
+    }
+
+    String stringify(Object object) {
         if (object == null) return "nil";
         if (object instanceof Double) {
             String text = object.toString();
@@ -35,6 +35,14 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
     
         return object.toString();
+    }
+
+    private void execute(Stmt stmt) {
+        stmt.accept(this);
+    }
+
+    private Object evaluate(Expr expr) {
+        return expr.accept(this);
     }
 
     @Override
@@ -52,10 +60,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitVarStmt(Var stmt) {
-        Object value = null;
-        if (stmt.initializer != null) {
-            value = evaluate(stmt.initializer);
-        }
+        Object value = stmt.initializer != null ? evaluate(stmt.initializer) : Environment.UNINITIALIZED;
         environment.define(stmt.name.lexeme, value);
         return null;
     }
@@ -197,6 +202,11 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             }
         }
         throw new RuntimeError(operator, "Operands must be integers.");
+    }
+
+    private void checkNumberOperand(Token operator, Object object) {
+        if (object instanceof Double) return;
+        throw new RuntimeError(operator, "Operand must be numbers.");
     }
 
     private void checkNumberOperands(Token operator, Object left, Object right) {

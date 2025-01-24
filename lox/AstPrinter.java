@@ -10,6 +10,16 @@ public class AstPrinter implements Expr.Visitor<String> {
     }
 
     @Override
+    public String visitVariableExpr(Variable expr) {
+        return parenthesize(expr.name.lexeme, expr);
+    }
+
+    @Override
+    public String visitAssignExpr(Assign expr) {
+        return parenthesize(expr.name.lexeme, expr);
+    }
+
+    @Override
     public String visitBinaryExpr(Expr.Binary expr) {
         return parenthesize(expr.operator.lexeme, expr.left, expr.right);
     }
@@ -61,15 +71,4 @@ public class AstPrinter implements Expr.Visitor<String> {
     
         System.out.println(new AstPrinter().print(expression));
       }
-
-    @Override
-    public String visitVariableExpr(Variable expr) {
-        throw new UnsupportedOperationException("Unimplemented method 'visitVariableExpr'");
-    }
-
-    @Override
-    public String visitAssignExpr(Assign expr) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitAssignExpr'");
-    }
 }

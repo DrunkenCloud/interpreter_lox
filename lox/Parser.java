@@ -21,6 +21,11 @@ public class Parser {
         return statements;
     }
 
+    Expr replParse() {
+        Expr expr = expression();
+        return expr;
+    }
+
     private Stmt declaration() {
         try {
             if (match(VAR)) return varDeclaration();
@@ -79,28 +84,6 @@ public class Parser {
             }
         }
         return false;
-    }
-
-    private boolean check(TokenType type) {
-        if (isAtEnd()) return false;
-        return peek().type == type;
-    }
-
-    private Token advance() {
-        if (!isAtEnd()) current++;
-        return previous();
-    }
-
-    private boolean isAtEnd() {
-        return peek().type == EOF;
-    }
-
-    private Token peek() {
-        return tokens.get(current);
-    }
-
-    private Token previous() {
-        return tokens.get(current - 1);
     }
 
     private Expr expression() {
@@ -243,6 +226,28 @@ public class Parser {
         }      
         return null;
     }
+
+    private boolean check(TokenType type) {
+        if (isAtEnd()) return false;
+        return peek().type == type;
+    }
+
+    private Token advance() {
+        if (!isAtEnd()) current++;
+        return previous();
+    }
+
+    private boolean isAtEnd() {
+        return peek().type == EOF;
+    }
+
+    private Token peek() {
+        return tokens.get(current);
+    }
+
+    private Token previous() {
+        return tokens.get(current - 1);
+    }
     
     private Token consume(TokenType type, String message) {
         if (check(type)) return advance();
@@ -276,6 +281,4 @@ public class Parser {
             advance();
         }
     }
-
-    
 }
