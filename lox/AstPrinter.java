@@ -1,6 +1,7 @@
 package lox;
 
 import lox.Expr.Assign;
+import lox.Expr.Logical;
 import lox.Expr.Ternary;
 import lox.Expr.Variable;
 
@@ -71,4 +72,10 @@ public class AstPrinter implements Expr.Visitor<String> {
     
         System.out.println(new AstPrinter().print(expression));
       }
+
+    @Override
+    public String visitLogicalExpr(Logical expr) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitLogicalExpr'");
+    }
 }

@@ -72,6 +72,46 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Object visitLogicalExpr(Logical expr) {
+        Object left = evaluate(expr.left);
+
+        if (expr.operator.type == TokenType.OR) {
+            if (isTruthy(left)) return left;
+        } else {
+            if (!isTruthy(left)) return left;
+        }
+
+        return evaluate(expr.right);
+    }
+
+    @Override
+    public Void visitIfStmt(If stmt) {
+        if (isTruthy(stmt.condition)) {
+            execute(stmt.thenBranch);
+        } else if (stmt.elseBranch != null) {
+            execute(stmt.elseBranch);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitWhileStmt(While stmt) {
+        while (isTruthy(evaluate(stmt.condition))) {
+            try {
+                execute(stmt.body);
+            } catch(BreakException e) {
+                break;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitBreakStmt(Break stmt) {
+        throw new BreakException();
+    }
+
+    @Override
     public Object visitVariableExpr(Variable expr) {
         return environment.get(expr.name);
     }
@@ -217,7 +257,15 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private Boolean isTruthy(Object object) {
         if (object == null) return false;
         if (object instanceof Boolean) return (boolean)object;
-        return true;
+
+        Boolean result = true;
+
+        if (object instanceof Expr) {
+            Object value = evaluate((Expr)object);
+            if (isBoolable(value)) result = (Boolean)value;
+        }
+        
+        return result;
     }
 
     private Boolean isBoolable(Object object) {
