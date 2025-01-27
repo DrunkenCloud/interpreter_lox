@@ -1,9 +1,6 @@
 package lox;
 
-import lox.Expr.Assign;
-import lox.Expr.Logical;
-import lox.Expr.Ternary;
-import lox.Expr.Variable;
+import lox.Expr.*;
 
 public class AstPrinter implements Expr.Visitor<String> {
     String print(Expr expr) {
@@ -11,22 +8,59 @@ public class AstPrinter implements Expr.Visitor<String> {
     }
 
     @Override
-    public String visitVariableExpr(Variable expr) {
-        return parenthesize(expr.name.lexeme, expr);
-    }
-
-    @Override
-    public String visitAssignExpr(Assign expr) {
-        return parenthesize(expr.name.lexeme, expr);
-    }
-
-    @Override
-    public String visitBinaryExpr(Expr.Binary expr) {
+    public String visitLogicalExpr(Logical expr) {
         return parenthesize(expr.operator.lexeme, expr.left, expr.right);
     }
 
     @Override
-    public String visitGroupingExpr(Expr.Grouping expr) {
+    public String visitCallExpr(Call expr) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("(call ").append(expr.callee.accept(this));
+        for (Expr argument : expr.arguments) {
+            builder.append(" ").append(argument.accept(this));
+        }
+        builder.append(")");
+        return builder.toString();
+    }
+
+    @Override
+    public String visitLambdaExpr(Lambda expr) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("(lambda (");
+        for (Token param : expr.parameters) {
+            builder.append(param.lexeme).append(" ");
+        }
+        if (!expr.parameters.isEmpty()) {
+            builder.deleteCharAt(builder.length() - 1);
+        }
+        builder.append(") ");
+        for (Stmt statement : expr.body) {
+            builder.append(statement.toString()).append(" ");
+        }
+        if (!expr.body.isEmpty()) {
+            builder.deleteCharAt(builder.length() - 1);
+        }
+        builder.append(")");
+        return builder.toString();
+    }
+
+    @Override
+    public String visitVariableExpr(Variable expr) {
+        return expr.name.lexeme;
+    }
+
+    @Override
+    public String visitAssignExpr(Assign expr) {
+        return parenthesize("assign " + expr.name.lexeme, expr.value);
+    }
+
+    @Override
+    public String visitBinaryExpr(Binary expr) {
+        return parenthesize(expr.operator.lexeme, expr.left, expr.right);
+    }
+
+    @Override
+    public String visitGroupingExpr(Grouping expr) {
         return parenthesize("group", expr.expression);
     }
 
@@ -36,13 +70,13 @@ public class AstPrinter implements Expr.Visitor<String> {
     }
 
     @Override
-    public String visitLiteralExpr(Expr.Literal expr) {
+    public String visitLiteralExpr(Literal expr) {
         if (expr.value == null) return "nil";
         return expr.value.toString();
     }
 
     @Override
-    public String visitUnaryExpr(Expr.Unary expr) {
+    public String visitUnaryExpr(Unary expr) {
         return parenthesize(expr.operator.lexeme, expr.right);
     }
 
@@ -52,12 +86,11 @@ public class AstPrinter implements Expr.Visitor<String> {
 
         for (Expr expr : exprs) {
             builder.append(" ");
-            if (expr == null) builder.append("invalid token");
+            if (expr == null) builder.append("nil");
             else builder.append(expr.accept(this));
         }
 
         builder.append(")");
-
         return builder.toString();
     }
 
@@ -71,11 +104,5 @@ public class AstPrinter implements Expr.Visitor<String> {
                 new Expr.Literal(45.67)));
     
         System.out.println(new AstPrinter().print(expression));
-      }
-
-    @Override
-    public String visitLogicalExpr(Logical expr) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitLogicalExpr'");
     }
 }
