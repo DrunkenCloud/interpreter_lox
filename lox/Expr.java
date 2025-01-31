@@ -146,8 +146,8 @@ abstract class Expr {
         final Token name;
     }
     static class Lambda extends Expr {
-        Lambda(List<Token> parameters, List<Stmt> body) {
-            this.parameters = parameters;
+        Lambda(List<Token> params, List<Stmt> body) {
+            this.params = params;
             this.body = body;
         }
 
@@ -156,7 +156,7 @@ abstract class Expr {
             return visitor.visitLambdaExpr(this);
         }
 
-        final List<Token> parameters;
+        final List<Token> params;
         final List<Stmt> body;
     }
 

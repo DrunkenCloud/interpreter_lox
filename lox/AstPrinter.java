@@ -27,10 +27,10 @@ public class AstPrinter implements Expr.Visitor<String> {
     public String visitLambdaExpr(Lambda expr) {
         StringBuilder builder = new StringBuilder();
         builder.append("(lambda (");
-        for (Token param : expr.parameters) {
+        for (Token param : expr.params) {
             builder.append(param.lexeme).append(" ");
         }
-        if (!expr.parameters.isEmpty()) {
+        if (!expr.params.isEmpty()) {
             builder.deleteCharAt(builder.length() - 1);
         }
         builder.append(") ");

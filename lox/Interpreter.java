@@ -1,14 +1,18 @@
 package lox;
 
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import lox.Expr.*;
 import lox.Stmt.*;
+import lox.Stmt.Class;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     final Environment globals = new Environment();
     private Environment environment = globals;
+    private final Map<Expr, Integer> locals = new HashMap<>();
 
     Interpreter() {
         globals.define("clock", new LoxCallable() {
@@ -149,6 +153,14 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitClassStmt(Class stmt) {
+        environment.define(stmt.name.lexeme, null);
+        LoxClass clas = new LoxClass(stmt.name.lexeme);
+        environment.assign(stmt.name, clas);
+        return null;
+    }
+
+    @Override
     public Object visitCallExpr(Call expr) {
         Object callee = evaluate(expr.callee);
 
@@ -173,12 +185,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitLambdaExpr(Lambda expr) {
-        return new LoxFunction(null, expr.parameters, expr.body, environment);
+        return new LoxFunction(null, expr.params, expr.body, environment);
     }
 
     @Override
     public Object visitVariableExpr(Variable expr) {
-        return environment.get(expr.name);
+        return lookUpVariable(expr.name, expr);
     }
     @Override
     public Object visitLiteralExpr(Literal expr) {
@@ -283,7 +295,14 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitAssignExpr(Assign expr) {
         Object value = evaluate(expr.value);
-        environment.assign(expr.name, value);
+        
+        Integer dist = locals.get(expr);
+        if (dist != null) {
+            environment.assignAt(dist, expr.name, value);
+        } else {
+            environment.assign(expr.name, value);
+        }
+
         return value;
     }
 
@@ -341,5 +360,17 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         if (a == null && b == null) return true;
         if (a == null || b == null) return false;
         return a.equals(b);
+    }
+
+    void resolve(Expr expr, int depth) {
+        locals.put(expr, depth);
+    }
+
+    private Object lookUpVariable(Token name, Expr expr) {
+        Integer dist = locals.get(expr);
+        if (dist != null) {
+            return environment.getAt(dist, name.lexeme);
+        }
+        return globals.get(name);
     }
 }
