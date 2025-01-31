@@ -7,7 +7,6 @@ import java.util.Stack;
 
 import lox.Expr.*;
 import lox.Stmt.*;
-import lox.Stmt.Class;
 
 public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
     private final Interpreter interpreter;
@@ -21,7 +20,8 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
 
     private enum FunctionType {
         NONE,
-        FUNCTION
+        FUNCTION,
+        METHOD
     }
 
     private enum LoopType {
@@ -119,9 +119,15 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
     }
 
     @Override
-    public Stmt visitClassStmt(Class stmt) {
+    public Stmt visitClassStmt(Stmt.Class stmt) {
         declare(stmt.name);
         define(stmt.name);
+
+        for (Stmt.Function method : stmt.methods) {
+            FunctionType declaration = FunctionType.METHOD;
+            resolveFunction(method, declaration);
+        }
+
         return null;
     }
 
@@ -158,6 +164,13 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
             resolve(argument);
         }
 
+        return null;
+    }
+
+    @Override
+    public Expr visitSetExpr(Set expr) {
+        resolve(expr.object);
+        resolve(expr.value);
         return null;
     }
 
@@ -200,6 +213,11 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
         return expr;
     }
 
+    @Override
+    public Expr visitGetExpr(Get expr) {
+        resolve(expr.object);
+        return null;
+    }
 
     private void beginScope() {
         scopes.push(new HashMap<String, VariableState>());

@@ -105,4 +105,16 @@ public class AstPrinter implements Expr.Visitor<String> {
     
         System.out.println(new AstPrinter().print(expression));
     }
+
+    @Override
+    public String visitGetExpr(Get expr) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitGetExpr'");
+    }
+
+    @Override
+    public String visitSetExpr(Set expr) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitSetExpr'");
+    }
 }

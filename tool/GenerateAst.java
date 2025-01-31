@@ -25,20 +25,22 @@ public class GenerateAst {
                 "Unary         : Token operator, Expr right",
                 "Ternary       : Expr Condition, Expr left, Expr right, Token operator",
                 "Variable      : Token name",
-                "Lambda        : List<Token> params, List<Stmt> body"
+                "Get           : Expr object, Token name",
+                "Lambda        : List<Token> params, List<Stmt> body",
+                "Set           : Expr object, Token name, Expr value"
             ));
 
             defineAst(outputDir, "Stmt", Arrays.asList(
-                "Block           : List<Stmt> statements",
-                "Expression      : Expr expression",
-                "Function        : Token name, List<Token> params, List<Stmt> body",
-                "If              : Expr condition, Stmt thenBranch, Stmt elseBranch",
-                "Print           : Expr expression",
-                "Return          : Token keyword, Expr value",
-                "Var             : Token name, Expr initializer",
-                "While           : Expr condition, Stmt body",
-                "Break           : Token keyword",
-                "Class           : Token name, List<Stmt.Function> methods"
+                "Block         : List<Stmt> statements",
+                "Expression    : Expr expression",
+                "Function      : Token name, List<Token> params, List<Stmt> body",
+                "If            : Expr condition, Stmt thenBranch, Stmt elseBranch",
+                "Print         : Expr expression",
+                "Return        : Token keyword, Expr value",
+                "Var           : Token name, Expr initializer",
+                "While         : Expr condition, Stmt body",
+                "Break         : Token keyword",
+                "Class         : Token name, List<Stmt.Function> methods"
             ));
         } catch (IOException e) {
             System.out.println("IOexception in Generating AST breh");
