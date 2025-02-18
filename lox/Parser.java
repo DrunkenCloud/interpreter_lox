@@ -152,12 +152,20 @@ public class Parser {
     private Stmt classDeclaration() {
         Token name = consume(IDENTIFIER, "Class must have a name.");
         consume(LEFT_BRACE, "Expected '{' before class body.");
+        
         List<Stmt.Function> methods = new ArrayList<>();
+        List<Stmt.Function> staticMethods = new ArrayList<>();
+
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
-            methods.add(function("method"));
+            if (match(STATIC)) {
+                staticMethods.add(function("static method"));
+            } else {
+                methods.add(function("method"));
+            }
         }
+
         consume(RIGHT_BRACE, "Expected '}' after class body.");
-        return new Stmt.Class(name, methods);
+        return new Stmt.Class(name, methods, staticMethods);
     }
 
     private Stmt.Function function(String kind) {
@@ -406,6 +414,7 @@ public class Parser {
             consume(RIGHT_PAREN, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
+        if (match(THIS)) return new Expr.This(previous());
         if (match(IDENTIFIER)) {
             return new Expr.Variable(previous());
         }

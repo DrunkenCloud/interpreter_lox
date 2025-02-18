@@ -13,6 +13,7 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
     private final Stack<Map<String, VariableState>> scopes = new Stack<>();
     private FunctionType currentFunction = FunctionType.NONE;
     private LoopType currentLoop = LoopType.NONE;
+    private ClassType currentClass = ClassType.NONE;
 
     Resolver(Interpreter interpreter) {
         this.interpreter = interpreter;
@@ -21,6 +22,7 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
     private enum FunctionType {
         NONE,
         FUNCTION,
+        INITIALIZER,
         METHOD
     }
 
@@ -33,6 +35,11 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
         DECALRED,
         DEFINED,
         USED
+    }
+
+    private enum ClassType {
+        NONE,
+        CLASS
     }
 
     @Override
@@ -114,19 +121,36 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
         if (currentFunction == FunctionType.NONE) {
             Lox.error(stmt.keyword, "Cant return from top-level code.");
         }
-        if (stmt.value != null) resolve(stmt.value);
+        if (stmt.value != null) {
+            if (currentFunction == FunctionType.INITIALIZER) {
+                Lox.error(stmt.keyword, "Cant return  a value from an Initializer.");
+            }
+            resolve(stmt.value);
+        }
         return null;
     }
 
     @Override
     public Stmt visitClassStmt(Stmt.Class stmt) {
+        ClassType enclosingClass = currentClass;
+        currentClass = ClassType.CLASS;
+
         declare(stmt.name);
         define(stmt.name);
 
+        beginScope();
+        scopes.peek().put("this", VariableState.USED);
+
         for (Stmt.Function method : stmt.methods) {
             FunctionType declaration = FunctionType.METHOD;
+            if (method.name.lexeme.equals("init")) {
+                declaration = FunctionType.INITIALIZER;
+            }
             resolveFunction(method, declaration);
         }
+
+        endScope();
+        currentClass = enclosingClass;
 
         return null;
     }
@@ -164,13 +188,6 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
             resolve(argument);
         }
 
-        return null;
-    }
-
-    @Override
-    public Expr visitSetExpr(Set expr) {
-        resolve(expr.object);
-        resolve(expr.value);
         return null;
     }
 
@@ -216,6 +233,23 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
     @Override
     public Expr visitGetExpr(Get expr) {
         resolve(expr.object);
+        return null;
+    }
+
+    @Override
+    public Expr visitSetExpr(Set expr) {
+        resolve(expr.object);
+        resolve(expr.value);
+        return null;
+    }
+
+    @Override
+    public Expr visitThisExpr(This expr) {
+        if (currentClass == ClassType.NONE) {
+            Lox.error(expr.keyword, "Can't use 'this' outside of a class");
+            return null;
+        }
+        resolveLocal(expr, expr.keyword);
         return null;
     }
 

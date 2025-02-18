@@ -66,7 +66,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         stmt.accept(this);
     }
 
-    private Object evaluate(Expr expr) {
+    protected Object evaluate(Expr expr) {
         return expr.accept(this);
     }
 
@@ -138,7 +138,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitFunctionStmt(Function stmt) {
-        LoxFunction function = new LoxFunction(stmt.name.lexeme, stmt.params, stmt.body, environment);
+        LoxFunction function = new LoxFunction(stmt.name.lexeme, stmt.params, stmt.body, environment, false);
         environment.define(stmt.name.lexeme, function);
         return null;
     }
@@ -156,49 +156,74 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         environment.define(stmt.name.lexeme, null);
 
         Map<String, LoxFunction> methods = new HashMap<>();
+        Map<String, LoxFunction> staticMethods = new HashMap<>();
+
         for (Stmt.Function method : stmt.methods) {
-            LoxFunction function = new LoxFunction(stmt.name.lexeme, method.params, method.body, environment);
+            LoxFunction function = new LoxFunction(stmt.name.lexeme, method.params, method.body, environment, method.name.lexeme.equals("init"));
             methods.put(method.name.lexeme, function);
         }
 
-        LoxClass clas = new LoxClass(stmt.name.lexeme, methods);
-        environment.assign(stmt.name, clas);
+        for (Stmt.Function staticMethod : stmt.staticMethods) {
+            LoxFunction function = new LoxFunction(stmt.name.lexeme, staticMethod.params, staticMethod.body, environment, false);
+            staticMethods.put(staticMethod.name.lexeme, function);
+        }
 
+        LoxClass klass = new LoxClass(stmt.name.lexeme, methods, staticMethods);
+
+        for (LoxFunction function : staticMethods.values()) {
+            function.bind(klass);
+        }
+
+        environment.assign(stmt.name, klass);
         return null;
     }
 
     @Override
     public Object visitCallExpr(Call expr) {
         Object callee = evaluate(expr.callee);
-
-        if (!(callee instanceof LoxCallable)) {
-            throw new RuntimeError(expr.paren, "Can only call functions and calles");
-        } 
-
+        
         List<Object> arguments = new ArrayList<>();
         for (Expr argument : expr.arguments) { 
             arguments.add(evaluate(argument));
         }
 
-        LoxCallable function = (LoxCallable)callee;
+        if (callee instanceof LoxFunction function) {
+            if (arguments.size() != function.arity()) {
+                throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
+            }
+            return function.call(this, arguments);
+        }
 
-        
+        if (!(callee instanceof LoxCallable)) {
+            throw new RuntimeError(expr.paren, "Can only call functions and classes.");
+        }
+
+        LoxCallable function = (LoxCallable) callee;
+
         if (arguments.size() != function.arity()) {
-            throw new RuntimeError(expr.paren, "Expected " + function.arity() + ", got " + arguments.size() + " arguments.");
+            throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
         }
 
         return function.call(this, arguments);
     }
 
     @Override
-    public Object visitGetExpr(Get expr) {
+    public Object visitGetExpr(Expr.Get expr) {
         Object object = evaluate(expr.object);
-        if (object instanceof LoxInstance) {
-            return ((LoxInstance) object).get(expr.name);
+
+        if (object instanceof LoxInstance instance) {
+            return instance.get(expr.name);
         }
-        throw new RuntimeError(expr.name, "Only instances have properties.");
+
+        if (object instanceof LoxClass klass) {
+            LoxFunction staticMethod = klass.findStaticMethod(expr.name.lexeme);
+            if (staticMethod != null) return staticMethod;
+        }
+
+        throw new RuntimeError(expr.name, "Undefined property '" + expr.name.lexeme + "'.");
     }
 
+    
     @Override
     public Object visitSetExpr(Set expr) {
         Object object = evaluate(expr.object);
@@ -208,14 +233,19 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
 
         Object value = evaluate(expr.value);
-        ((LoxInstance)object).set(expr.name, value);
+        ((LoxInstance) object).set(expr.name, value);
 
         return value;
     }
 
     @Override
+    public Object visitThisExpr(This expr) {
+        return lookUpVariable(expr.keyword, expr);
+    }
+
+    @Override
     public Object visitLambdaExpr(Lambda expr) {
-        return new LoxFunction(null, expr.params, expr.body, environment);
+        return new LoxFunction(null, expr.params, expr.body, environment, false);
     }
 
     @Override
@@ -251,7 +281,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitBinaryExpr(Binary expr) {
         Object left = evaluate(expr.left);
-        Object right = evaluate(expr.right); 
+        Object right = evaluate(expr.right);
 
         switch (expr.operator.type) {
             case PLUS:
