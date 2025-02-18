@@ -212,7 +212,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object object = evaluate(expr.object);
 
         if (object instanceof LoxInstance instance) {
-            return instance.get(expr.name);
+            return instance.get(expr.name, this);
         }
 
         if (object instanceof LoxClass klass) {

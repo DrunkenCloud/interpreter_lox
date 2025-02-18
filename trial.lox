@@ -1,12 +1,16 @@
 class Foo {
-  init() {
-    print this;
+  init(value) {
+    this.value = value;
   }
-  static balls() {
-    print "balls";
-  }
+
+  value { return this.value; }
 }
 
-var foo = Foo();
-foo.init();
-Foo.balls();
+fun redo() {
+  print "hello";
+}
+
+print "hello";
+var foo = Foo(42);
+print 2;
+print foo.value;

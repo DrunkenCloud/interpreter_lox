@@ -1,7 +1,6 @@
 package lox;
 
 import static lox.TokenType.*;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -47,7 +46,7 @@ public class Parser {
         if (match(BREAK)) return breakStatement();
         if (match(CLASS)) return classDeclaration();
         if (match(RETURN)) return returnStatement();
-        if (match(FUN)) return function("function");
+        if (match(FUN)) return function(null, "function");
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
         return expressionStatement();
@@ -155,21 +154,41 @@ public class Parser {
         
         List<Stmt.Function> methods = new ArrayList<>();
         List<Stmt.Function> staticMethods = new ArrayList<>();
-
+    
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
-            if (match(STATIC)) {
-                staticMethods.add(function("static method"));
+            Token methodName = consume(IDENTIFIER, "Expect method name.");
+    
+            if (peek().type == LEFT_PAREN) {
+                if (match(STATIC)) {
+                    staticMethods.add(function(methodName, "static method"));
+                } else {
+                    methods.add(function(methodName, "method"));
+                }
+            } else if (peek().type == LEFT_BRACE) {
+                if (match(STATIC)) {
+                    staticMethods.add(getterFunction(methodName, "static getter"));
+                } else {
+                    methods.add(getterFunction(methodName, "getter"));
+                }
             } else {
-                methods.add(function("method"));
+                throw error(peek(), "Expect '(' for method or '{' for getter.");
             }
         }
-
+    
         consume(RIGHT_BRACE, "Expected '}' after class body.");
         return new Stmt.Class(name, methods, staticMethods);
+    }    
+
+    private Stmt.Function getterFunction(Token name, String kind) {
+        consume(LEFT_BRACE, "Expected '{' after " + kind + " name.");
+        List<Stmt> body = block();
+        return new Stmt.Function(name, new ArrayList<>(), body);
     }
 
-    private Stmt.Function function(String kind) {
-        Token name = consume(IDENTIFIER, "Expect " + kind + " name");
+    private Stmt.Function function(Token name, String kind) {
+        if (name == null) {
+            name = consume(IDENTIFIER, "Expect method name.");
+        }
         consume(LEFT_PAREN, "Expected '(' after " + kind + " name.");
         
         List<Token> parameters = new ArrayList<>();
@@ -178,16 +197,17 @@ public class Parser {
                 if (parameters.size() >= 255) {
                     error(peek(), "Can't have more than 255 parameters.");
                 }
-                
                 parameters.add(consume(IDENTIFIER, "Expect parameter name."));
             } while (match(COMMA));
         }
         consume(RIGHT_PAREN, "Expect ')' after parameters.");
-
+        
         consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
         List<Stmt> body = block();
+        
         return new Stmt.Function(name, parameters, body);
     }
+    
 
     private Stmt returnStatement() {
         Token keyword = previous();
