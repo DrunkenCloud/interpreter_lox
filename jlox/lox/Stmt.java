@@ -138,10 +138,13 @@ abstract class Stmt {
         final Token keyword;
     }
     static class Class extends Stmt {
-        Class(Token name, List<Stmt.Function> methods, List<Stmt.Function> staticMethods) {
+        Class(Token name, Expr.Variable superclass, List<Stmt.Function> methods, List<Stmt.Function> staticMethods, List<Stmt.Function> getters, List<Stmt.Function> staticGetters) {
             this.name = name;
+            this.superclass = superclass;
             this.methods = methods;
             this.staticMethods = staticMethods;
+            this.getters = getters;
+            this.staticGetters = staticGetters;
         }
 
         @Override
@@ -150,8 +153,11 @@ abstract class Stmt {
         }
 
         final Token name;
+        final Expr.Variable superclass;
         final List<Stmt.Function> methods;
         final List<Stmt.Function> staticMethods;
+        final List<Stmt.Function> getters;
+        final List<Stmt.Function> staticGetters;
     }
 
     abstract <R> R accept(Visitor<R> visitor);

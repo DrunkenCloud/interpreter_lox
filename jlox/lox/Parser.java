@@ -150,25 +150,34 @@ public class Parser {
 
     private Stmt classDeclaration() {
         Token name = consume(IDENTIFIER, "Class must have a name.");
+        Expr.Variable superclass = null;
+        if (match(LESS)) {
+            consume(IDENTIFIER, "Expect superclass name.");
+            superclass = new Expr.Variable(previous());
+        }
+    
         consume(LEFT_BRACE, "Expected '{' before class body.");
         
         List<Stmt.Function> methods = new ArrayList<>();
         List<Stmt.Function> staticMethods = new ArrayList<>();
+        List<Stmt.Function> getters = new ArrayList<>();
+        List<Stmt.Function> staticGetters = new ArrayList<>();
     
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            boolean isStatic = match(STATIC);
             Token methodName = consume(IDENTIFIER, "Expect method name.");
     
             if (peek().type == LEFT_PAREN) {
-                if (match(STATIC)) {
+                if (isStatic) {
                     staticMethods.add(function(methodName, "static method"));
                 } else {
                     methods.add(function(methodName, "method"));
                 }
             } else if (peek().type == LEFT_BRACE) {
-                if (match(STATIC)) {
-                    staticMethods.add(getterFunction(methodName, "static getter"));
+                if (isStatic) {
+                    staticGetters.add(getterFunction(methodName, "static getter"));
                 } else {
-                    methods.add(getterFunction(methodName, "getter"));
+                    getters.add(getterFunction(methodName, "getter"));
                 }
             } else {
                 throw error(peek(), "Expect '(' for method or '{' for getter.");
@@ -176,13 +185,15 @@ public class Parser {
         }
     
         consume(RIGHT_BRACE, "Expected '}' after class body.");
-        return new Stmt.Class(name, methods, staticMethods);
-    }    
+        return new Stmt.Class(name, superclass, methods, staticMethods, getters, staticGetters);
+    }
+    
 
     private Stmt.Function getterFunction(Token name, String kind) {
         consume(LEFT_BRACE, "Expected '{' after " + kind + " name.");
+        List<Token> parameters = new ArrayList<>();
         List<Stmt> body = block();
-        return new Stmt.Function(name, new ArrayList<>(), body);
+        return new Stmt.Function(name, parameters, body);
     }
 
     private Stmt.Function function(Token name, String kind) {
@@ -408,7 +419,7 @@ public class Parser {
     
     private Expr call() {
         Expr expr = primary();
-        
+
         while (true) {
             if (match(LEFT_PAREN)) {
                 expr = finishCall(expr);
@@ -434,6 +445,13 @@ public class Parser {
             consume(RIGHT_PAREN, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
+        if (match(SUPER)) {
+            Token keyword = previous();
+            consume(DOT, "Expect '.' after 'super'.");
+            Token method = consume(IDENTIFIER,
+                "Expect superclass method name.");
+            return new Expr.Super(keyword, method);
+          }
         if (match(THIS)) return new Expr.This(previous());
         if (match(IDENTIFIER)) {
             return new Expr.Variable(previous());

@@ -40,6 +40,10 @@ public class Environment {
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
+    Object get(String name) {
+        return values.get(name);
+    }
+
     Object getAt(int distance, String name) {
         return ancestor(distance).values.get(name);
     }

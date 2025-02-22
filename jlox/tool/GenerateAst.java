@@ -28,7 +28,8 @@ public class GenerateAst {
                 "Get           : Expr object, Token name",
                 "Lambda        : List<Token> params, List<Stmt> body",
                 "Set           : Expr object, Token name, Expr value",
-                "This          : Token keyword"
+                "This          : Token keyword",
+                "Super         : Token keyword, Token method"
             ));
 
             defineAst(outputDir, "Stmt", Arrays.asList(
@@ -41,7 +42,7 @@ public class GenerateAst {
                 "Var           : Token name, Expr initializer",
                 "While         : Expr condition, Stmt body",
                 "Break         : Token keyword",
-                "Class         : Token name, List<Stmt.Function> methods, List<Stmt.Function> staticMethods"
+                "Class         : Token name, Expr.Variable superclass, List<Stmt.Function> methods, List<Stmt.Function> staticMethods, List<Stmt.Function> getters, List<Stmt.Function> staticGetters"
             ));
         } catch (IOException e) {
             System.out.println("IOexception in Generating AST breh");
