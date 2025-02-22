@@ -456,9 +456,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         if (dist != null) {
             return environment.getAt(dist, name.lexeme);
         }
-        if (environment.get(name.lexeme) != null) {
-            return environment.get(name);
-        }
         return globals.get(name);
     }
 

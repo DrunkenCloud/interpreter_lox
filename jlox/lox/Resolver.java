@@ -23,7 +23,8 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
         NONE,
         FUNCTION,
         INITIALIZER,
-        METHOD
+        METHOD,
+        GETTER
     }
 
     private enum LoopType {
@@ -161,6 +162,21 @@ public class Resolver implements Expr.Visitor<Expr>, Stmt.Visitor<Stmt> {
                 declaration = FunctionType.INITIALIZER;
             }
             resolveFunction(method, declaration);
+        }
+
+        for (Stmt.Function staticMethod : stmt.staticMethods) {
+            FunctionType declaration = FunctionType.METHOD;
+            resolveFunction(staticMethod, declaration);
+        }
+
+        for (Stmt.Function getter : stmt.getters) {
+            FunctionType declaration = FunctionType.GETTER;
+            resolveFunction(getter, declaration);
+        }
+
+        for (Stmt.Function staticGetter : stmt.staticGetters) {
+            FunctionType declaration = FunctionType.GETTER;
+            resolveFunction(staticGetter, declaration);
         }
 
         if (stmt.superclass != null) endScope();

@@ -2,6 +2,10 @@ class Math {
   static square(n) {
     return n*n;
   }
+  static n {
+    return 2;
+  }
 }
 
 print Math.square(3);
+print Math.n;
