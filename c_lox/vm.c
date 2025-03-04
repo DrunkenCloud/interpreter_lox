@@ -58,7 +58,10 @@ static InterpretResult run() {
             case OP_SUBTRACT: BINARY_OP(-); break;
             case OP_MULTIPLY: BINARY_OP(*); break;
             case OP_DIVIDE:   BINARY_OP(/); break;
-            case OP_NEGATE: push(-pop()); break;
+            case OP_NEGATE: {
+                size_t top = vm.stackTop;
+                vm.stack[top - 1] = -vm.stack[top - 1];
+            }
             case OP_CONSTANT_LONG: {
                 uint8_t const1 = READ_BYTE();
                 uint8_t const2 = READ_BYTE();
