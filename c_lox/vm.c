@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "common.h"
 #include "vm.h"
+#include "compiler.h"
 #include "debug.h"
 
 VM vm; 
@@ -59,8 +60,8 @@ static InterpretResult run() {
             case OP_MULTIPLY: BINARY_OP(*); break;
             case OP_DIVIDE:   BINARY_OP(/); break;
             case OP_NEGATE: {
-                size_t top = vm.stackTop;
-                vm.stack[top - 1] = -vm.stack[top - 1];
+                *(vm.stackTop-1) = -(*(vm.stackTop-1));
+                break;
             }
             case OP_CONSTANT_LONG: {
                 uint8_t const1 = READ_BYTE();
@@ -87,8 +88,20 @@ static InterpretResult run() {
     #undef READ_BYTE
 }
 
-InterpretResult interpret(Chunk* chunk) {
-    vm.chunk = chunk;
+InterpretResult interpret(const char* source) {
+    Chunk chunk;
+    initChunk(&chunk);
+
+    if (!compile(source, &chunk)) {
+        freeChunk(&chunk);
+        return INTERPRET_COMPILE_ERROR;
+    }
+
+    vm.chunk = &chunk;
     vm.ip = vm.chunk->code;
-    return run();
+
+    InterpretResult result = run();
+
+    freeChunk(&chunk);
+    return result;
 }

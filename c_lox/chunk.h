@@ -15,7 +15,7 @@ typedef enum {
     OP_RETURN,
 } Op_Code;
 
-typedef struct {
+typedef struct Lines {
     int line;
     int count;
     struct Lines* next;
