@@ -51,13 +51,13 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line) {
 }
 
 void writeConstant(Chunk* chunk, Value value, int line) {
-    long curr = (long) value;
+    long curr = AS_NUMBER(value);
     if (curr > 256) {
-        Value val1 = (curr & 255);
+        Value val1 = NUMBER_VAL((curr & 255));
         curr >>= 8;
-        Value val2 = (curr & 255);
+        Value val2 = NUMBER_VAL((curr & 255));
         curr >>= 8;
-        Value val3 = (curr & 255);
+        Value val3 = NUMBER_VAL((curr & 255));
         
         int const1 = addConstant(chunk, val1);
         int const2 = addConstant(chunk, val2);
