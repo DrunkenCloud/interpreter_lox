@@ -15,6 +15,6 @@
 
 .vscode/
 
-*.c
+*.o
 
 clox
