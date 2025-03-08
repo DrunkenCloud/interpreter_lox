@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -127,18 +128,31 @@ static uint8_t makeConstant(Value value) {
     return (uint8_t)constant;
 }
 
+static uint8_t findStringConstant(const char* start, int length) {
+    for (int i = 0; i < currentChunk()->constants.count; i++) {
+        ObjString* string = AS_STRING(currentChunk()->constants.values[i]);
+        if (string->length == length && memcmp(string->chars, start, length) == 0) {
+            return (uint8_t)i;
+        }
+    }
+    return UINT8_MAX;
+}
+
 static void emitConstant(Value value) {
     emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
 static uint8_t identifierConstant(Token* name) {
+    uint8_t existing = findStringConstant(name->start, name->length);
+    if (existing != UINT8_MAX) {
+        return existing;
+    }
     return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
 }
 
 static uint8_t parseVariable(const char* errorMessage) {
     consume(TOKEN_IDENTIFIER, errorMessage);
-    uint8_t id = identifierConstant(&parser.previous);
-    return id;
+    return identifierConstant(&parser.previous);
 }
 
 static void defineVariable(uint8_t global) {

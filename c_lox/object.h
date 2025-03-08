@@ -24,6 +24,8 @@ struct ObjString {
     int length;
     char* chars;
     uint32_t hash;
+    bool isGlobal;
+    int globalIndex;
 };
 
 ObjString* takeString(char* chars, int length);
