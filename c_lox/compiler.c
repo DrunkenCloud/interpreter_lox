@@ -8,6 +8,8 @@
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
 #endif
+#define MAX_BREAKS 256
+#define MAX_LOOP_DEPTH 256
 
 typedef struct {
     Token current;
@@ -49,10 +51,19 @@ typedef struct {
     int scopeDepth;
 } Compiler;
 
+typedef struct {
+    int breaks[MAX_BREAKS];
+    int breakCount;
+} LoopContext;
+
 Parser parser;
 Compiler* current = NULL;
 Chunk* compilingChunk;
+
+LoopContext loopContexts[MAX_LOOP_DEPTH];
+
 int loopStart = -1;
+int loopDepth = 0;
 
 static void expression();
 static void statement();
@@ -171,6 +182,13 @@ static void patchJump(int offset) {
 
     currentChunk()->code[offset] = (jump >> 8) & 0xff;
     currentChunk()->code[offset + 1] = jump & 0xff;
+}
+
+static void patchBreaks(LoopContext* loopContext) {
+    for (int i = 0; i < loopContext->breakCount; i++) {
+        patchJump(loopContext->breaks[i]);
+    }
+    loopContext->breakCount = 0;
 }
 
 static void emitLoop(int loopStart) {
@@ -412,7 +430,13 @@ static void ifStatement() {
 }
 
 static void whileStatement() {
-    int prevLoop = loopStart;
+    if (loopDepth == MAX_LOOP_DEPTH) {
+        error("Can't nest more than 256 loops.");
+        return;
+    }
+    int prevLoopStart = loopStart;
+    LoopContext* loopContext = &loopContexts[loopDepth++];
+    loopContext->breakCount = 0;
     loopStart = currentChunk()->count;
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
@@ -428,28 +452,36 @@ static void whileStatement() {
     patchJump(exitJump);
     emitByte(OP_POP);
 
-    loopStart = prevLoop;
+    patchBreaks(loopContext);
+
+    loopStart = prevLoopStart;
+    loopDepth--;
 }
 
 static void forStatement() {
+    if (loopDepth == MAX_LOOP_DEPTH) {
+        error("Can't nest more than 256 loops.");
+        return;
+    }
     beginScope();
-    
+    LoopContext* loopContext = &loopContexts[loopDepth++];
+    loopContext->breakCount = 0;
+
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
     if (match(TOKEN_SEMICOLON)) {
+        // No initializer.
     } else if (match(TOKEN_VAR)) {
         varDeclaration();
     } else {
         expressionStatement();
     }
 
-    int prevLoop = loopStart;
+    int prevLoopStart = loopStart;
     loopStart = currentChunk()->count;
     int exitJump = -1;
-
     if (!match(TOKEN_SEMICOLON)) {
         expression();
-        consume(TOKEN_SEMICOLON, "Expected ';' after loop condition.");
-
+        consume(TOKEN_SEMICOLON, "Expect ';' after loop condition.");
         exitJump = emitJump(OP_JUMP_IF_FALSE);
         emitByte(OP_POP);
     }
@@ -467,13 +499,31 @@ static void forStatement() {
 
     statement();
     emitLoop(loopStart);
-    
+
     if (exitJump != -1) {
         patchJump(exitJump);
         emitByte(OP_POP);
     }
+
+    patchBreaks(loopContext);
+
     endScope();
-    loopStart = prevLoop;
+    loopStart = prevLoopStart;
+    loopDepth--;
+}
+
+static void breakStatement() {
+    if (loopDepth == 0) {
+        error("Can't break outside of a loop.");
+        return;
+    }
+    LoopContext* loopContext = &loopContexts[loopDepth - 1];
+    if (loopContext->breakCount >= MAX_BREAKS) {
+        error("Too many break statements in loop.");
+        return;
+    }
+    consume(TOKEN_SEMICOLON, "Expect ';' after 'break'.");
+    loopContext->breaks[loopContext->breakCount++] = emitJump(OP_JUMP);
 }
 
 static void declaration() {
@@ -510,6 +560,7 @@ static void statement() {
         }
         emitLoop(loopStart);
     } else if (match(TOKEN_BREAK)) {
+        breakStatement();
     } else {
         expressionStatement();
     }
