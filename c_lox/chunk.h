@@ -9,6 +9,9 @@ typedef enum {
     OP_CONSTANT,
     OP_NEGATE,
     OP_PRINT,
+    OP_JUMP_IF_FALSE,
+    OP_JUMP,
+    OP_LOOP,
     OP_NIL,
     OP_TRUE,
     OP_NOT,
@@ -26,6 +29,7 @@ typedef enum {
     OP_SUBTRACT,
     OP_MULTIPLY,
     OP_DIVIDE,
+    OP_MODULO,
     OP_RETURN,
 } Op_Code;
 
