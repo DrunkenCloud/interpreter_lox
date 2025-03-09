@@ -448,10 +448,10 @@ static void whileStatement() {
     statement();
 
     emitLoop(loopStart);
-
     patchJump(exitJump);
     emitByte(OP_POP);
 
+    if (match(TOKEN_ELSE)) statement();
     patchBreaks(loopContext);
 
     loopStart = prevLoopStart;
@@ -500,14 +500,16 @@ static void forStatement() {
     statement();
     emitLoop(loopStart);
 
+
     if (exitJump != -1) {
         patchJump(exitJump);
         emitByte(OP_POP);
     }
+    endScope();
 
+    if (match(TOKEN_ELSE)) statement();
     patchBreaks(loopContext);
 
-    endScope();
     loopStart = prevLoopStart;
     loopDepth--;
 }
@@ -545,17 +547,12 @@ static void statement() {
     } else if (match(TOKEN_IF)) {
         ifStatement();
     } else if (match(TOKEN_WHILE)) {
-        consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
-        expression();
-        consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
-        statement();
-    } else if (match(TOKEN_WHILE)) {
         whileStatement();
     } else if (match(TOKEN_FOR)) {
         forStatement();
     } else if (match(TOKEN_CONTINUE)) {
         consume(TOKEN_SEMICOLON, "Expect ';' after 'continue'.");
-        if (loopStart == -1) {
+        if (loopDepth == 0) {
             error("Can't continue outside of a loop.");
         }
         emitLoop(loopStart);
