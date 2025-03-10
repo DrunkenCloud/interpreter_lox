@@ -30,6 +30,7 @@ typedef enum {
     OP_MULTIPLY,
     OP_DIVIDE,
     OP_MODULO,
+    OP_CALL,
     OP_RETURN,
 } Op_Code;
 
