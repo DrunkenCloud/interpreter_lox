@@ -1,38 +1,24 @@
-fun createVector(x, y) {
-  fun add(other) {
-    var otherX = other("getX");
-    var otherY = other("getY");
-    return createVector(x + otherX, y + otherY);
-  }
-  
-  fun dispatch(method, arg) {
-    if (method == "getX") {
-      return x;
-    } else if (method == "getY") {
-      return y;
-    } else if (method == "add") {
-      return add(arg);
-    } else if (method == "toString") {
-      return "Vector(" + x + ", " + y + ")";
-    } else {
-      print "Unknown method: " + method;
+var globalOne;
+var globalTwo;
+
+fun main() {
+  {
+    var a = "one";
+    fun one() {
+      print a;
     }
+    globalOne = one;
   }
-  
-  return dispatch;
+
+  {
+    var a = "two";
+    fun two() {
+      print a;
+    }
+    globalTwo = two;
+  }
 }
 
-var v1 = createVector(3, 4);
-var v2 = createVector(1, 2);
-
-var x1 = v1("getX", nil);
-var y1 = v1("getY", nil);
-var x2 = v2("getX", nil);
-var y2 = v2("getY", nil);
-
-print "v1 coordinates: (" + x1 + ", " + y1 + ")";
-print "v2 coordinates: (" + x2 + ", " + y2 + ")";
-
-var v3 = v1("add", v2);
-var temp = v3("toString", nil);
-print "v3 = v1 + v2: " + temp;
+main();
+globalOne();
+globalTwo();
