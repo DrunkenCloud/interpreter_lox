@@ -27,27 +27,28 @@ typedef enum {
 } ObjType;
 
 struct Obj {
-    ObjType type;
     struct Obj* next;
+    ObjType type;
+    uint8_t isMarked;
 };
 
 typedef struct {
     Obj obj;
     int arity;
     int upvalueCount;
-    Chunk chunk;
     ObjString* name;
+    Chunk chunk;
 } ObjFunction;
 
 typedef Value (*NativeFn) (int argCount, Value* args, bool* hasError, const char** errorMsg);
 
 typedef struct {
     Obj obj;
+    NativeFn function;
+    const char* name;
+    const char* errorMsg;
     int arity;
     bool hasError;
-    const char* errorMsg;
-    const char* name;
-    NativeFn function;
 } ObjNative;
 
 struct ObjString {

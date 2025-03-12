@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "memory.h"
 #include "compiler.h"
 #include "scanner.h"
 #ifdef DEBUG_PRINT_CODE
@@ -208,10 +209,10 @@ static void patchBreaks(LoopContext* loopContext) {
     loopContext->breakCount = 0;
 }
 
-static void emitLoop(int loopStart) {
+static void emitLoop(int loopStartTemp) {
     emitByte(OP_LOOP);
 
-    int offset = currentChunk()->count - loopStart + 2;
+    int offset = currentChunk()->count - loopStartTemp + 2;
     if (offset > UINT16_MAX) error("Loop body too large.");
 
     emitByte((offset >> 8)& 0xff);
@@ -306,7 +307,7 @@ static int resolveUpvalue(Compiler* compiler, Token* name) {
 
     int upvalue = resolveUpvalue(compiler->enclosing, name);
     if (upvalue != -1) {
-        compiler->enclosing->locals[local].isCaptured = true;
+        compiler->enclosing->locals[upvalue].isCaptured = true;
         return addUpvalue(compiler, (uint8_t)upvalue, false);
     }
 
@@ -870,4 +871,12 @@ ObjFunction* compile(const char* source) {
     }
     ObjFunction* function = endCompiler();
     return parser.hadError ? NULL : function;
+}
+
+void markCompilerRoots() {
+    Compiler* compiler = current;
+    while (compiler != NULL) {
+        markObject((Obj*)compiler->function);
+        compiler = compiler->enclosing;
+    }
 }

@@ -3,13 +3,9 @@
 #include "value.h"
 #include "object.h"
 
-int getLine(Lines* lines, int offset) {
-    Lines* curr = lines;
-    while (curr != NULL && offset >= curr->count) {
-        offset -= curr->count;
-        curr = curr->next;
-    }
-    return (curr != NULL) ? curr->line : -1;
+int getLine(LineArray* lines, int offset) {
+    if (lines->count == 0) return -1;
+    return lines->lineNumbers[offset < lines->count ? offset : lines->count - 1];
 }
 
 void disassembleChunk(Chunk* chunk, const char* name) {
@@ -60,10 +56,10 @@ static int constantInstructionLong(const char* name, Chunk* chunk, int offset) {
 int disassembleInstruction(Chunk* chunk, int offset) {
     printf("%04d ", offset);
 
-    if (offset > 0 && getLine(chunk->lines, offset) == getLine(chunk->lines, offset-1)) {
+    if (offset > 0 && getLine(&chunk->lines, offset) == getLine(&chunk->lines, offset-1)) {
         printf("  |  ");
     } else {
-        printf("%4d ", getLine(chunk->lines, offset));
+        printf("%4d ", getLine(&chunk->lines, offset));
     }
 
     uint8_t instruction = chunk->code[offset];

@@ -23,9 +23,9 @@ typedef struct {
 } Value;
 
 typedef struct {
+    Value* values;
     int capacity;
     int count;
-    Value* values;
 } ValueArray;
 
 #define IS_BOOL(value)    ((value).type == VAL_BOOL)

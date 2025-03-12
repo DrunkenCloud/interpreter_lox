@@ -36,29 +36,30 @@ typedef enum {
     OP_MODULO,
     OP_CALL,
     OP_RETURN,
-} Op_Code;
-
-typedef struct Lines {
-    int line;
-    int count;
-    struct Lines* next;
-} Lines;
+} OpCode;
 
 typedef struct {
+    int* lineNumbers;
     int count;
     int capacity;
-    uint8_t* code;
-    Lines* lines;
-    ValueArray constants;
-} Chunk;
+} LineArray;
 
+typedef struct {
+    uint8_t* code;
+    ValueArray constants;
+    LineArray lines;
+    int count;
+    int capacity;
+} Chunk;
 
 void initChunk(Chunk* chunk);
 void freeChunk(Chunk* chunk);
 void writeChunk(Chunk* chunk, uint8_t byte, int line);
 int addConstant(Chunk* chunk, Value value);
 void writeConstant(Chunk* chunk, Value value, int line);
-Lines* insertLine(Lines* lines, int line);
-Lines* createNode(int line);
+void initLineArray(LineArray* lines);
+void freeLineArray(LineArray* lines);
+void addLine(LineArray* lines, int line);
+int getLine(LineArray* lines, int instructionIndex);
 
 #endif

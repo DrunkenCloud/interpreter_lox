@@ -2,52 +2,60 @@
 #include <stdio.h>
 #include "chunk.h"
 #include "memory.h"
+#include "vm.h"
 
 void initChunk(Chunk* chunk) {
     chunk->capacity = 0;
     chunk->count = 0;
     chunk->code = NULL;
-    chunk->lines = NULL;
-    initValueArray(&chunk->constants);
+    chunk->constants.count = 0;
+    chunk->constants.capacity = 0;
+    chunk->constants.values = NULL;
+    initLineArray(&chunk->lines);
 }
 
-Lines* createNode(int line) {
-    Lines* temp = malloc(sizeof(Lines));
-    temp->line = line;
-    temp->count = 1;
-    temp->next = NULL;
-    return temp;
+void freeChunk(Chunk* chunk) {
+    FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
+    freeLineArray(&chunk->lines);
+    freeValueArray(&chunk->constants);
+    initChunk(chunk);
 }
 
-Lines* insertLine(Lines* lines, int line) {
-    if (lines == NULL) {
-        return createNode(line);
+void initLineArray(LineArray* lines) {
+    lines->count = 0;
+    lines->capacity = 0;
+    lines->lineNumbers = NULL;
+}
+
+void freeLineArray(LineArray* lines) {
+    FREE_ARRAY(int, lines->lineNumbers, lines->capacity);
+    initLineArray(lines);
+}
+
+void addLine(LineArray* lines, int line) {
+    if (lines->count > 0 && lines->lineNumbers[lines->count - 1] == line) {
+        return;
     }
-    Lines* curr = lines;
-    while (curr->next != NULL) {
-        if (curr->line == line) {
-            curr->count++;
-            return lines;
-        }
-        curr = curr->next;
+
+    if (lines->count >= lines->capacity) {
+        int oldCapacity = lines->capacity;
+        lines->capacity = GROW_CAPACITY(oldCapacity);
+        lines->lineNumbers = GROW_ARRAY(int, lines->lineNumbers, oldCapacity, lines->capacity);
     }
-    if (curr->line == line) {
-        curr->count++;
-        return lines;
-    }
-    curr->next = createNode(line);
-    return lines;
+
+    lines->lineNumbers[lines->count++] = line;
 }
 
 void writeChunk(Chunk* chunk, uint8_t byte, int line) {
-    if (chunk->capacity <= chunk->count+1) {
+    if (chunk->capacity <= chunk->count + 1) {
         int oldCapacity = chunk->capacity;
         chunk->capacity = GROW_CAPACITY(oldCapacity);
         chunk->code = GROW_ARRAY(uint8_t, chunk->code, oldCapacity, chunk->capacity);
     }
+
     chunk->code[chunk->count] = byte;
+    addLine(&chunk->lines, line);
     chunk->count++;
-    chunk->lines = insertLine(chunk->lines, line);
 }
 
 void writeConstant(Chunk* chunk, Value value, int line) {
@@ -58,7 +66,7 @@ void writeConstant(Chunk* chunk, Value value, int line) {
         Value val2 = NUMBER_VAL((curr & 255));
         curr >>= 8;
         Value val3 = NUMBER_VAL((curr & 255));
-        
+
         int const1 = addConstant(chunk, val1);
         int const2 = addConstant(chunk, val2);
         int const3 = addConstant(chunk, val3);
@@ -75,12 +83,8 @@ void writeConstant(Chunk* chunk, Value value, int line) {
 }
 
 int addConstant(Chunk* chunk, Value value) {
+    push(value);
     writeValueArray(&chunk->constants, value);
+    pop();
     return chunk->constants.count - 1;
-}
-
-void freeChunk(Chunk* chunk) {
-    FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
-    freeValueArray(&chunk->constants);
-    initChunk(chunk);
 }
