@@ -771,7 +771,7 @@ static void dot(bool canAssign) {
         }
         return;
     }
-
+    
     consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
     uint8_t name = identifierConstant(&parser.previous);
 
