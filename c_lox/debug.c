@@ -4,7 +4,7 @@
 #include "object.h"
 
 int getLine(LineArray* lines, int offset) {
-    if (lines->count == 0) return -1;
+    if (lines == NULL || lines->lineNumbers == NULL || lines->count == 0) return -1;
     return lines->lineNumbers[offset < lines->count ? offset : lines->count - 1];
 }
 
@@ -94,6 +94,14 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return byteInstruction("OP_GET_UPVALUE", chunk, offset);
         case OP_SET_UPVALUE:
             return byteInstruction("OP_SET_UPVALUE", chunk, offset);
+        case OP_GET_PROPERTY:
+            return constantInstruction("OP_GET_PROPERTY", chunk, offset);
+        case OP_SET_PROPERTY:
+            return constantInstruction("OP_SET_PROPERTY", chunk, offset);
+        case OP_GET_PROPERTY_VAR:
+            return byteInstruction("OP_GET_PROPERTY_VAR", chunk, offset);
+        case OP_SET_PROPERTY_VAR:
+            return byteInstruction("OP_SET_PROPERTY_VAR", chunk, offset);
         case OP_CLOSE_UPVALUE:
             return simpleInstruction("OP_CLOSE_UPVALUE", offset);
         case OP_DEFINE_GLOBAL:
@@ -124,6 +132,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return byteInstruction("OP_CALL", chunk, offset);
         case OP_RETURN:
             return simpleInstruction("OP_RETURN", offset);
+        case OP_CLASS:
+            return constantInstruction("OP_CLASS", chunk, offset);
         case OP_CLOSURE:
             offset++;
             uint8_t constant = chunk->code[offset++];

@@ -11,24 +11,24 @@
 
 typedef struct {
     ObjClosure* closure;
-    uint8_t* ip;
     Value* slots;
+    uint8_t* ip;
 } CallFrame;
 
 typedef struct {
     CallFrame frames[FRAMES_MAX];
-    int frameCount;
     Value stack[STACK_MAX];
-    ObjUpvalue* openUpvalues;
-    Value* stackTop;
     Table globals;
     Table strings;
-    Obj* objects;
-    int grayCount;
-    int grayCapacity;
     Obj** grayStack;
+    ObjUpvalue* openUpvalues;
+    Value* stackTop;
+    Obj* objects;
     size_t bytesAllocated;
     size_t nextGC;
+    int frameCount;
+    int grayCount;
+    int grayCapacity;
 } VM;
 
 typedef enum {

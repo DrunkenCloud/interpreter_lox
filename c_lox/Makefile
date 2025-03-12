@@ -16,6 +16,9 @@ clean:
 	rm -f $(OBJ) $(EXEC)
 
 run: $(EXEC)
-	valgrind --leak-check=full -s ./$(EXEC) ./trial.lox
+	./$(EXEC) ./trial.lox
+
+val: $(EXEC)
+	valgrind --track-origins=yes --leak-check=full --show-leak-kinds=all -s ./$(EXEC) ./trial.lox
 
 .PHONY: all clean run

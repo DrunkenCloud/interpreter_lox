@@ -17,8 +17,6 @@ static void repl() {
             break;
         }
 
-        if (strlen(line) == 5 && memcpy(line, "exit;", 5)) exit(0);
-
         interpret(line);
     }
 }

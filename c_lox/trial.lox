@@ -1,33 +1,7 @@
-var globalOne;
-var globalTwo;
+class ob {}
 
-fun main() {
-  {
-    var a = "one";
-    fun one() {
-      print a;
-    }
-    globalOne = one;
-  }
+var obj = ob();
 
-  {
-    var a = "two";
-    fun two() {
-      print a;
-    }
-    globalTwo = two;
-  }
-}
-
-main();
-globalOne();
-globalTwo();
-
-fun fib(n) {
-  if (n < 2) return n;
-  return fib(n - 2) + fib(n - 1);
-}
-
-var start = clock();
-print fib(5);
-print clock() - start;
+var field = "name";
+obj.[field] = "Alice";
+print obj.name;  // "Alice"

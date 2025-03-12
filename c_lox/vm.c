@@ -119,6 +119,11 @@ static bool call(ObjClosure* closure, int argCount) {
 static bool callValue(Value callee, int argCount) {
     if (IS_OBJ(callee)) {
         switch (OBJ_TYPE(callee)) {
+            case OBJ_CLASS: {
+                ObjClass* klass = AS_CLASS(callee);
+                vm.stackTop[-argCount - 1] = OBJ_VAL(newInstance(klass));
+                return true;
+            }
             case OBJ_CLOSURE: {
                 return call(AS_CLOSURE(callee), argCount);
             }
@@ -320,6 +325,84 @@ static InterpretResult run() {
                 *frame->closure->upvalues[slot]->location = peek(0);
                 break;
             }
+            case OP_GET_PROPERTY: {
+                if (!IS_INSTANCE(peek(0))) {
+                    runtimeError("Only instances have properties.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                ObjInstance* instance = AS_INSTANCE(peek(0));
+                ObjString* name = READ_STRING();
+
+                Value value;
+                if (tableGet(&instance->fields, name, &value)) {
+                    pop();
+                    push(value);
+                    break;
+                }
+                runtimeError("Undefined property '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            case OP_SET_PROPERTY: {
+                if (!IS_INSTANCE(peek(1))) {
+                    runtimeError("Only instances can have properties.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                ObjInstance* instance = AS_INSTANCE(peek(1));
+                tableSet(&instance->fields, READ_STRING(), peek(0));
+                Value value = pop();
+                pop();
+                push(value);
+                break;
+            }
+            case OP_GET_PROPERTY_VAR: {
+                if (!IS_INSTANCE(peek(1))) {
+                    runtimeError("Only instances have properties.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+            
+                ObjInstance* instance = AS_INSTANCE(peek(1));
+            
+                if (!IS_STRING(peek(0))) {
+                    runtimeError("Property name must be a string.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+            
+                ObjString* name = AS_STRING(peek(0));
+                Value value;
+                
+                if (tableGet(&instance->fields, name, &value)) {
+                    pop();
+                    pop();
+                    push(value);
+                    break;
+                }
+            
+                runtimeError("Undefined property '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            case OP_SET_PROPERTY_VAR: {
+                if (!IS_INSTANCE(peek(2))) {
+                    runtimeError("Only instances can have properties.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+            
+                ObjInstance* instance = AS_INSTANCE(peek(2));
+            
+                if (!IS_STRING(peek(1))) {
+                    runtimeError("Property name must be a string.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+            
+                ObjString* name = AS_STRING(peek(1));
+                tableSet(&instance->fields, name, peek(0));
+            
+                Value value = pop();
+                pop();
+                pop();
+                push(value);
+            
+                break;
+        }
             case OP_CLOSE_UPVALUE:{
                 closeUpvalues(vm.stackTop - 1);
                 pop();
@@ -400,6 +483,9 @@ static InterpretResult run() {
                 ip = frame->ip;
                 break;
             }
+            case OP_CLASS:
+                push(OBJ_VAL(newClass(READ_STRING())));
+                break;
             case OP_CLOSURE: {
                 ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
                 ObjClosure* closure = newClosure(function);
