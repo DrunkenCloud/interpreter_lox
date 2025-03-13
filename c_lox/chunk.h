@@ -32,6 +32,8 @@ typedef enum {
     OP_METHOD,
     OP_EQUAL,
     OP_GREATER,
+    OP_INHERIT,
+    OP_GET_SUPER,
     OP_CLOSURE,
     OP_CLOSE_UPVALUE,
     OP_LESS,
