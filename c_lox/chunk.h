@@ -29,6 +29,7 @@ typedef enum {
     OP_SET_PROPERTY_VAR,
     OP_DEFINE_GLOBAL,
     OP_CLASS,
+    OP_METHOD,
     OP_EQUAL,
     OP_GREATER,
     OP_CLOSURE,

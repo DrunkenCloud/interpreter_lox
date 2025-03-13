@@ -1,7 +1,8 @@
-class ob {}
+class Scone {
+  topping(first, second) {
+    print "scone with " + first + " and " + second;
+  }
+}
 
-var obj = ob();
-
-var field = "name";
-obj.[field] = "Alice";
-print obj.name;  // "Alice"
+var scone = Scone();
+scone.topping("berries", "cream");
