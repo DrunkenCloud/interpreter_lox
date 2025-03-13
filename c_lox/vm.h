@@ -24,6 +24,7 @@ typedef struct {
     ObjUpvalue* openUpvalues;
     Value* stackTop;
     Obj* objects;
+    ObjString* initString;
     size_t bytesAllocated;
     size_t nextGC;
     int frameCount;
